@@ -955,6 +955,19 @@ class Stage extends DisplayObjectContainer {
 		
 		nme_render_stage (__handle);
 		
+		if (sendEnterFrame) {
+			
+			__broadcast (new Event (Event.FRAME_CONSTRUCTED));
+			
+		}
+		
+		// run frame script
+		
+		if (sendEnterFrame) {
+			
+			__broadcast (new Event (Event.EXIT_FRAME));
+			
+		}
 	}
 	
 	

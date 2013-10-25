@@ -15,6 +15,8 @@ class Event {
 	public static var CONTEXT3D_CREATE = "context3DCreate";
 	public static var DEACTIVATE = "deactivate";
 	public static var ENTER_FRAME = "enterFrame";
+	public static var EXIT_FRAME = "exitFrame";
+	public static var FRAME_CONSTRUCTED = "frameConstructed";
 	public static var ID3 = "id3";
 	public static var INIT = "init";
 	public static var MOUSE_LEAVE = "mouseLeave";
