@@ -961,7 +961,7 @@ class Stage extends DisplayObjectContainer {
 			
 		}
 		
-		// run frame script
+		MovieClip.__runAllFrameScript();
 		
 		if (sendEnterFrame) {
 			
