@@ -18,7 +18,7 @@ class MovieClip extends Sprite {
 		super ();
 		
 		__currentFrame = 0;
-		__totalFrames = 0;
+		__totalFrames = 1;
 		
 	}
 	
