@@ -1,6 +1,8 @@
 package flash.display;
 
 
+import flash.display.MovieClip.MovieClipList;
+import flash.display.MovieClip.MovieClipListIterator;
 import openfl.utils.WeakRef;
 
 
@@ -9,25 +11,29 @@ using Lambda;
 class MovieClip extends Sprite {
 	
 	
-	public var currentFrame (default, null):Int = 0;
+	public var currentFrame (get, null):Int = 0;
 	public var enabled:Bool;
 	public var framesLoaded (default, null):Int;
-	public var totalFrames (default, null):Int = 1;
+	public var totalFrames (get, null):Int = 1;
 	
-	@:noCompletion private static var __frameClips:Array<WeakRef<MovieClip>> = new Array<WeakRef<MovieClip>>();
-	@:noCompletion private static var __numMC:Int = 0;
-	@:noCompletion private var __frameScripts:Array<Void -> Void>;
-	@:noCompletion private var __numFrameScripts:Int = 0;
-	@:noCompletion private var __beforeFrame:Int = -1;
-	@:noCompletion private var __clipNo:Int;
+	@:noCompletion private var __currentFrame:Int = 0;
+	@:noCompletion private var __totalFrames(default, set):Int = 1;
+	
+	@:noCompletion private static var animationClips:MovieClipList = new MovieClipList();
+	@:noCompletion private static var frameClips:MovieClipList = new MovieClipList();
+	@:noCompletion private static var numAllClips:Int = 0;
+	@:noCompletion private var frameScripts:Array<Void -> Void>;
+	@:noCompletion private var numFrameScripts:Int = 0;
+	@:noCompletion private var lastFrameScript:Int = -1;
+	@:noCompletion public var clipNo(default, null):Int;
 	
 	
 	public function new () {
 		
 		super ();
 		
-		__clipNo = __numMC++;
-		__frameScripts = [];
+		clipNo = numAllClips++;
+		frameScripts = [];
 		
 	}
 	
@@ -40,29 +46,11 @@ class MovieClip extends Sprite {
 		
 		if (script != null) {
 			
-			if (__frameScripts[frame + 1] == null) {
+			if (frameScripts[frame + 1] == null) {
 				
-				if (++__numFrameScripts == 1) {
+				if (++numFrameScripts == 1) {
 					
-					var l = 0;
-					var r = __frameClips.length - 1;
-					while (l <= r) {
-						
-						var m = (l + r) >> 1;
-						var targetClipId = __frameClips[m].get ().__clipNo;
-						if (targetClipId > __clipNo) {
-							
-							l = m;
-							
-						} else if (targetClipId < __clipNo) {
-							
-							r = m - 1;
-							
-						}
-						
-					}
-					
-					__frameClips.insert (l, new WeakRef(this));
+					frameClips.register (this);
 					
 				}
 				
@@ -70,33 +58,11 @@ class MovieClip extends Sprite {
 			
 		} else {
 			
-			if (__frameScripts[frame + 1] != null) {
+			if (frameScripts[frame + 1] != null) {
 				
-				if (--__numFrameScripts == 0) {
+				if (--numFrameScripts == 0) {
 					
-					var l = 0;
-					var r = __frameClips.length - 1;
-					while (l <= r) {
-						
-						var m = (l + r) >> 1;
-						var targetClipId = __frameClips[m].get().__clipNo;
-						if (targetClipId > __clipNo) {
-							
-							l = m;
-							
-						} else if (targetClipId < __clipNo) {
-							
-							r = m - 1;
-							
-						} else  {
-							
-							l = m;
-							break;
-							
-						}
-						
-					}
-					__frameClips.splice (l, 1);
+					frameClips.unregister (this);
 					
 				}
 				
@@ -104,45 +70,66 @@ class MovieClip extends Sprite {
 			
 		}
 		
-		__frameScripts[frame + 1] = script;
+		frameScripts[frame + 1] = script;
 		
 	}
 	
-	@:noCompletion public static function __runAllFrameScript ():Void {
+	@:noCompletion public static function runAllFrameScript ():Void {
 		
-		var i = 0;
-		while (i < __frameClips.length) {
+		for (clip in frameClips) {
 			
-			var clip = __frameClips[i].get ();
-			if (clip != null) {
-				
-				clip.__runFrameScript ();
-				i++;
-				
-			} else {
-				
-				__frameClips.splice(i, 1);
-				
-			}
+			clip.runFrameScript ();
 			
 		}
 		
 	}
 	
 	
-	@:noCompletion public function __runFrameScript ():Void {
+	@:noCompletion public function runFrameScript ():Void {
 		
-		if (__beforeFrame != currentFrame) {
+		if (lastFrameScript != currentFrame) {
 			
-			var script = __frameScripts[currentFrame];
+			var script = frameScripts[currentFrame];
 			if (script != null) {
 				
 				script();
 				
 			}
-			__beforeFrame = currentFrame;
+			lastFrameScript = currentFrame;
 			
 		}
+		
+	}
+	
+	@:noCompletion public static function updateAnimations ():Void {
+		
+		for (clip in animationClips) {
+			
+			clip.enterFrame();
+			
+		}
+		
+	}
+	
+	@:noCompletion private function enterFrame ():Void
+	{
+		
+		
+		
+	}
+	
+	@:noCompletion private function turnOnAutoUpdate ():Void
+	{
+		
+		animationClips.register (this);
+		
+	}
+	
+	
+	@:noCompletion private function turnOffAutoUpdate ():Void
+	{
+		
+		animationClips.unregister (this);
 		
 	}
 	
@@ -200,33 +187,195 @@ class MovieClip extends Sprite {
 	
 	// Getters & Setters
 	
+	private function get_currentFrame ():Int {
+		
+		return __currentFrame;
+		
+	}
 	
 	
+	private function get_totalFrames ():Int {
+		
+		return __totalFrames;
+		
+	}
 	
-	private function set_totalFrames (v:Int):Int {
+	
+	private function set___totalFrames (v:Int):Int {
 		
 		
-		if (__frameScripts.length < v + 1) {
+		if (frameScripts.length < v + 1) {
 			
-			for (i in __frameScripts.length ... v + 1) {
+			for (i in frameScripts.length ... v + 1) {
 				
-				__frameScripts.push(null);
+				frameScripts.push(null);
 				
 			}
 			
-		} else if (__frameScripts.length > v + 1) {
+		} else if (frameScripts.length > v + 1) {
 			
-			for (i in v + 1 ... __frameScripts.length) {
+			for (i in v + 1 ... frameScripts.length) {
 				
-				__frameScripts.pop();
+				frameScripts.pop();
 				
 			}
 			
 		}
 		
-		return totalFrames = v;
+		return __totalFrames = v;
 		
 	}
 	
+	
+}
+
+
+
+
+class MovieClipList {
+	
+	private var list:Array<WeakRef<MovieClip>>;
+	
+	public var length(get, null):Int;
+	
+	public function new ()
+	{
+		list = [];
+	}
+	
+	public function register (mc:MovieClip):Void
+	{
+		
+		var clipNo = mc.clipNo;
+		var l = 0;
+		var r = list.length - 1;
+		while (l <= r) {
+			
+			var m = (l + r) >> 1;
+			var targetClipId = list[m].get ().clipNo;
+			if (targetClipId > clipNo) {
+				
+				l = m;
+				
+			} else if (targetClipId < clipNo) {
+				
+				r = m - 1;
+				
+			} else {
+				return;
+			}
+			
+		}
+		
+		list.insert (l, new WeakRef (mc));
+		
+	}
+	
+	
+	public function unregister (mc:MovieClip):Void {
+		
+		var clipNo = mc.clipNo;
+		var l = 0;
+		var r = length - 1;
+		while (l <= r) {
+			
+			var m = (l + r) >> 1;
+			var targetClipId = list[m].get().clipNo;
+			if (targetClipId > clipNo) {
+				
+				l = m;
+				
+			} else if (targetClipId < clipNo) {
+				
+				r = m - 1;
+				
+			} else {
+				
+				l = m;
+				break;
+				
+			}
+			
+		}
+		
+		if (list[l].get() == mc) list.splice (l, 1);
+		
+	}
+	
+	
+	public function get(pos:Int):MovieClip
+	{
+		
+		return list[pos].get();
+		
+	}
+	
+	
+	public function splice(pos:Int, len:Int):Void
+	{
+		
+		list.splice(pos, len);
+		
+	}
+	
+	
+	public function iterator ():Iterator<MovieClip> 
+	{
+		return new MovieClipListIterator(this);
+	}
+	
+	
+	
+	
+	// Getters & Setters
+	
+	private function get_length():Int { return list.length; }
+	
+	
+}
+
+
+
+
+class MovieClipListIterator
+{
+	
+	private var list:MovieClipList;
+	private var i:Int = 0;
+	
+	public function new (movieClipList:MovieClipList) {
+		
+		list = movieClipList;
+		
+	}
+	
+	public function hasNext () {
+		
+		while (true) {
+			
+			if (i >= list.length) {
+				
+				return false;
+				
+			} else if (list.get (i) == null) {
+				
+				list.splice(i, 1);
+				
+			} else {
+				break;
+			}
+			
+		}
+		
+		
+		return true;
+	}
+	
+	
+	public function next () {
+		
+		return list.get (i++);
+		
+	}
 	
 }

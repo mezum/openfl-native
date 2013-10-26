@@ -942,6 +942,7 @@ class Stage extends DisplayObjectContainer {
 		
 		if (sendEnterFrame) {
 			
+			MovieClip.updateAnimations ();
 			__broadcast (new Event (Event.ENTER_FRAME));
 			
 		}
@@ -958,13 +959,7 @@ class Stage extends DisplayObjectContainer {
 		if (sendEnterFrame) {
 			
 			__broadcast (new Event (Event.FRAME_CONSTRUCTED));
-			
-		}
-		
-		MovieClip.__runAllFrameScript();
-		
-		if (sendEnterFrame) {
-			
+			MovieClip.runAllFrameScript ();
 			__broadcast (new Event (Event.EXIT_FRAME));
 			
 		}
