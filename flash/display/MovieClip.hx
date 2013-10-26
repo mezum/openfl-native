@@ -88,7 +88,7 @@ class MovieClip extends Sprite {
 							
 							r = m - 1;
 							
-						} else if (targetClipId == __clipNo) {
+						} else  {
 							
 							l = m;
 							break;
