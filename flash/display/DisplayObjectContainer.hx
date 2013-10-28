@@ -6,6 +6,7 @@ import flash.errors.RangeError;
 import flash.events.Event;
 import flash.geom.Point;
 import flash.Lib;
+import haxe.ds.StringMap.StringMap;
 
 
 class DisplayObjectContainer extends InteractiveObject {
@@ -210,6 +211,12 @@ class DisplayObjectContainer extends InteractiveObject {
 	@:noCompletion override public function __broadcast (event:Event):Void {
 		
 		var i = 0;
+		
+		if (!__numEventListeners.exists (event.type)) {
+			
+			return;
+			
+		}
 		
 		if (__children.length > 0) {
 			

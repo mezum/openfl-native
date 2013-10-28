@@ -40,6 +40,7 @@ class EventDispatcher implements IEventDispatcher {
 		
 		list.push (new Listener (new WeakRef<Function> (listener, useWeakReference), useCapture, priority));
 		list.sort (__sortEvents);
+		__updateListenerCount(type, 1);
 		
 	}
 	
@@ -72,6 +73,7 @@ class EventDispatcher implements IEventDispatcher {
 			var index = 0;
 			
 			var listItem, listener;
+			var deleteCount = 0;
 			
 			while (index < list.length) {
 				
@@ -79,6 +81,7 @@ class EventDispatcher implements IEventDispatcher {
 				if (listener.listener.get() == null) {
 					
 					list.splice (index, 1);
+					deleteCount--;
 					
 				} else {
 					
@@ -88,7 +91,7 @@ class EventDispatcher implements IEventDispatcher {
 						
 						if (event.__getIsCancelledNow ()) {
 							
-							return true;
+							break;
 							
 						}
 						
@@ -100,6 +103,7 @@ class EventDispatcher implements IEventDispatcher {
 				
 			}
 			
+			__updateListenerCount(event.type, deleteCount);
 			return true;
 			
 		}
@@ -118,6 +122,7 @@ class EventDispatcher implements IEventDispatcher {
 		}
 		
 		var list = __eventMap.get (type);
+		var deleteCount = 0;
 		
 		if (list != null) {
 			
@@ -126,11 +131,13 @@ class EventDispatcher implements IEventDispatcher {
 				var item = list[0];
 				if (item.listener.get() != null) {
 					
+					if (deleteCount < 0) __updateListenerCount(type, deleteCount);
 					return true;
 					
 				} else {
 					
 					list.shift();
+					deleteCount--;
 					
 				}
 				
@@ -138,6 +145,7 @@ class EventDispatcher implements IEventDispatcher {
 			
 		}
 		
+		if (deleteCount < 0) __updateListenerCount(type, deleteCount);
 		return false;
 		
 	}
@@ -160,6 +168,7 @@ class EventDispatcher implements IEventDispatcher {
 			if (item != null && item.is (listener, capture)) {
 				
 				list.splice(i, 1);
+				__updateListenerCount(type, -1);
 				return;
 				
 			}
@@ -181,6 +190,9 @@ class EventDispatcher implements IEventDispatcher {
 		return hasEventListener (type);
 		
 	}
+	
+	
+	@:keep @:noCompletion private function __updateListenerCount (type:String, diff:Int):Void { }
 	
 	
 	@:noCompletion public function __dispatchCompleteEvent ():Void {
