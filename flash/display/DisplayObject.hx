@@ -47,9 +47,11 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable {
 	@:noCompletion private var __filters:Array<Dynamic>;
 	@:noCompletion private var __graphicsCache:Graphics;
 	@:noCompletion private var __id:Int;
-	@:noCompletion private var __parent:DisplayObjectContainer;
+	@:noCompletion private var __parent(default, set):DisplayObjectContainer;
 	@:noCompletion private var __scale9Grid:Rectangle;
 	@:noCompletion private var __scrollRect:Rectangle;
+	
+	/*@:noCompletion */private var __numEventListeners:Map<String, Int>;
 	
 	
 	public function new (handle:Dynamic, type:String) {
@@ -60,6 +62,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable {
 		__handle = handle;
 		__id = nme_display_object_get_id (__handle);
 		this.name = type + " " + __id;
+		__numEventListeners = new Map();
 		
 	}
 	
@@ -78,6 +81,41 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable {
 		}
 		
 		return result;
+		
+	}
+	
+	
+	override public function willTrigger(type:String):Bool {
+		
+		return super.willTrigger(type) || parent.willTrigger(type);
+		
+	}
+	
+	
+	@:noCompletion override private function __updateListenerCount(type:String, diff:Int):Void {
+		
+		if (diff == 0) {
+			
+			return;
+			
+		}
+		
+		var total = __numEventListeners.exists (type) ? __numEventListeners.get(type) + diff : diff;
+		if (total > 0) {
+			
+			__numEventListeners.set(type, total);
+			
+		} else {
+			
+			__numEventListeners.remove(type);
+			
+		}
+
+		if (parent != null) {
+			
+			parent.__updateListenerCount(type, diff);
+			
+		}
 		
 	}
 	
@@ -636,6 +674,33 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable {
 	
 	
 	private function get_parent ():DisplayObjectContainer { return __parent; }
+	private function set___parent (v:DisplayObjectContainer):DisplayObjectContainer {
+		
+		if (__parent != null) {
+			
+			for (type in __numEventListeners.keys()) {
+				
+				__parent.__updateListenerCount (type, -__numEventListeners.get (type));
+				
+			}
+			
+		}
+		
+		__parent = v;
+		
+		if (v != null) {
+			
+			for (type in __numEventListeners.keys()) {
+				
+				__parent.__updateListenerCount (type, __numEventListeners.get (type));
+				
+			}
+			
+		}
+		
+		return v;
+		
+	}
 	
 	
 	private function get_rotation ():Float { return nme_display_object_get_rotation (__handle); }

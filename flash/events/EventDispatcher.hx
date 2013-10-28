@@ -23,13 +23,6 @@ class EventDispatcher implements IEventDispatcher {
 	
 	public function addEventListener (type:String, listener:Function, useCapture:Bool = false, priority:Int = 0, useWeakReference:Bool = false):Void {
 		
-		if (useWeakReference) {
-			
-			trace ("WARNING: Weak listener not supported for native (using hard reference)");
-			useWeakReference = false;
-			
-		}
-		
 		if (__eventMap == null) {
 			
 			__eventMap = new EventMap ();
@@ -47,6 +40,7 @@ class EventDispatcher implements IEventDispatcher {
 		
 		list.push (new Listener (new WeakRef<Function> (listener, useWeakReference), useCapture, priority));
 		list.sort (__sortEvents);
+		__updateListenerCount(type, 1);
 		
 	}
 	
@@ -78,16 +72,16 @@ class EventDispatcher implements IEventDispatcher {
 			
 			var index = 0;
 			
-			var listItem, listener;
+			var listener;
+			var deleteCount = 0;
 			
 			while (index < list.length) {
 				
-				listItem = list[index];
-				listener = ((listItem != null && listItem.listener.get() != null) ? listItem : null);
-				
-				if (listener == null) {
+				listener = list[index];
+				if (listener.listener.get() == null) {
 					
 					list.splice (index, 1);
+					deleteCount--;
 					
 				} else {
 					
@@ -97,7 +91,7 @@ class EventDispatcher implements IEventDispatcher {
 						
 						if (event.__getIsCancelledNow ()) {
 							
-							return true;
+							break;
 							
 						}
 						
@@ -109,6 +103,7 @@ class EventDispatcher implements IEventDispatcher {
 				
 			}
 			
+			__updateListenerCount(event.type, deleteCount);
 			return true;
 			
 		}
@@ -127,17 +122,30 @@ class EventDispatcher implements IEventDispatcher {
 		}
 		
 		var list = __eventMap.get (type);
+		var deleteCount = 0;
 		
 		if (list != null) {
 			
-			for (item in list) {
+			while (list.length > 0) {
 				
-				if (item != null) return true;
+				var item = list[0];
+				if (item.listener.get() != null) {
+					
+					if (deleteCount < 0) __updateListenerCount(type, deleteCount);
+					return true;
+					
+				} else {
+					
+					list.shift();
+					deleteCount--;
+					
+				}
 				
 			}
 			
 		}
 		
+		if (deleteCount < 0) __updateListenerCount(type, deleteCount);
 		return false;
 		
 	}
@@ -156,15 +164,12 @@ class EventDispatcher implements IEventDispatcher {
 		
 		for (i in 0...list.length) {
 			
-			if (list[i] != null) {
+			item = list[i];
+			if (item != null && item.is (listener, capture)) {
 				
-				item = list[i];
-				if (item != null && item.is (listener, capture)) {
-					
-					list[i] = null;
-					return;
-					
-				}
+				list.splice(i, 1);
+				__updateListenerCount(type, -1);
+				return;
 				
 			}
 			
@@ -182,15 +187,12 @@ class EventDispatcher implements IEventDispatcher {
 	
 	public function willTrigger (type:String):Bool {
 		
-		if (__eventMap == null) {
-			
-			return false;
-			
-		}
-		
-		return __eventMap.exists (type);
+		return hasEventListener (type);
 		
 	}
+	
+	
+	@:keep @:noCompletion private function __updateListenerCount (type:String, diff:Int):Void { }
 	
 	
 	@:noCompletion public function __dispatchCompleteEvent ():Void {
@@ -209,30 +211,7 @@ class EventDispatcher implements IEventDispatcher {
 	
 	@:noCompletion private static inline function __sortEvents (a:Listener, b:Listener):Int {
 		
-		if (a == null || b == null) { 
-			
-			return 0;
-			
-		}
-		
-		var al = a;
-		var bl = b;
-		
-		if (al == null || bl == null) {
-			
-			return 0;
-			
-		}
-		
-		if (al.priority == bl.priority) { 
-			
-			return al.id == bl.id ? 0 : ( al.id > bl.id ? 1 : -1 );
-			
-		} else {
-		
-			return al.priority < bl.priority ? 1 : -1;
-			
-		}
+		return a.priority == b.priority ? a.id - b.id : b.priority - a.priority;
 		
 	}
 	
