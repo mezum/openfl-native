@@ -72,7 +72,7 @@ class EventDispatcher implements IEventDispatcher {
 			
 			var index = 0;
 			
-			var listItem, listener;
+			var listener;
 			var deleteCount = 0;
 			
 			while (index < list.length) {
