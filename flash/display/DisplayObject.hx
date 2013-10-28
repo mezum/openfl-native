@@ -82,6 +82,13 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable {
 	}
 	
 	
+	override public function willTrigger(type:String):Bool {
+		
+		return super.willTrigger(type) || parent.willTrigger(type);
+		
+	}
+	
+	
 	public function getBounds (targetCoordinateSpace:DisplayObject):Rectangle {
 		
 		var result = new Rectangle ();

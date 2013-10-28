@@ -178,13 +178,7 @@ class EventDispatcher implements IEventDispatcher {
 	
 	public function willTrigger (type:String):Bool {
 		
-		if (__eventMap == null) {
-			
-			return false;
-			
-		}
-		
-		return __eventMap.exists (type);
+		return hasEventListener (type);
 		
 	}
 	
